@@ -38,18 +38,21 @@ import static org.kohsuke.args4j.Utilities.checkNonNull;
  * for specific parameter classes not yet implemented.
  * The registry is a singleton that can be
  * retrieved with the {@link #getRegistry()} call.
+ * 
  * @author Stephan Fuhrmann
  */
 public class OptionHandlerRegistry {
 
     /**
      * The shared reference.
-     * @see #getRegistry() 
+     * 
+     * @see #getRegistry()
      */
     private static OptionHandlerRegistry instance;
-    
+
     /**
      * Gets the option handler registry singleton instance.
+     * 
      * @return a shared instance of the registry.
      */
     public synchronized static OptionHandlerRegistry getRegistry() {
@@ -58,7 +61,7 @@ public class OptionHandlerRegistry {
         }
         return instance;
     }
-    
+
     /**
      * Constructs an option handler manager with the
      * default handlers initialized.
@@ -69,16 +72,16 @@ public class OptionHandlerRegistry {
 
     /** Registers the default handlers. */
     private void initHandlers() {
-        registerHandler(Boolean.class,BooleanOptionHandler.class);
-        registerHandler(boolean.class,BooleanOptionHandler.class);
-        registerHandler(File.class,FileOptionHandler.class);
+        registerHandler(Boolean.class, BooleanOptionHandler.class);
+        registerHandler(boolean.class, BooleanOptionHandler.class);
+        registerHandler(File.class, FileOptionHandler.class);
         registerHandler(URL.class, URLOptionHandler.class);
         registerHandler(URI.class, URIOptionHandler.class);
-        registerHandler(Integer.class,IntOptionHandler.class);
-        registerHandler(int.class,IntOptionHandler.class);
+        registerHandler(Integer.class, IntOptionHandler.class);
+        registerHandler(int.class, IntOptionHandler.class);
         registerHandler(Double.class, DoubleOptionHandler.class);
-        registerHandler(double.class,DoubleOptionHandler.class);
-        registerHandler(String.class,StringOptionHandler.class);
+        registerHandler(double.class, DoubleOptionHandler.class);
+        registerHandler(String.class, StringOptionHandler.class);
         registerHandler(Byte.class, ByteOptionHandler.class);
         registerHandler(byte.class, ByteOptionHandler.class);
         registerHandler(Character.class, CharOptionHandler.class);
@@ -92,17 +95,23 @@ public class OptionHandlerRegistry {
         registerHandler(InetAddress.class, InetAddressOptionHandler.class);
         registerHandler(Pattern.class, PatternOptionHandler.class);
         // enum is a special case
-        registerHandler(Map.class,MapOptionHandler.class);
+        registerHandler(Map.class, MapOptionHandler.class);
 
         try {
-            Class p = Class.forName("java.nio.file.Path");
+            Class<?> p = Class.forName("java.nio.file.Path");
             registerHandler(p, PathOptionHandler.class);
         } catch (ClassNotFoundException e) {
-            // running in Java6 or earlier
+            // Expected when running in Java 6 or earlier.
+            // Log at FINE level to satisfy static analysis and aid future debugging without
+            // alarming end-users.
+            java.util.logging.Logger.getLogger(OptionHandlerRegistry.class.getName())
+                    .log(java.util.logging.Level.FINE,
+                            "java.nio.file.Path not found, skipping PathOptionHandler registration");
         }
     }
-    
-    /** Finds the constructor for an option handler. 
+
+    /**
+     * Finds the constructor for an option handler.
      */
     private static Constructor<? extends OptionHandler> getConstructor(Class<? extends OptionHandler> handlerClass) {
         try {
@@ -111,7 +120,7 @@ public class OptionHandlerRegistry {
             throw new IllegalArgumentException(Messages.NO_CONSTRUCTOR_ON_HANDLER.format(handlerClass));
         }
     }
-    
+
     /**
      * Registers a user-defined {@link OptionHandler} class with args4j.
      *
@@ -120,19 +129,23 @@ public class OptionHandlerRegistry {
      * their own {@link OptionHandler} implementation.
      *
      * @param valueType
-     *      The specified handler is used when the field/method annotated by {@link Option}
-     *      is of this type.
+     *                     The specified handler is used when the field/method
+     *                     annotated by {@link Option}
+     *                     is of this type.
      * @param handlerClass
-     *      This class must have the constructor that has the same signature as
-     *      {@link OptionHandler#OptionHandler(CmdLineParser, OptionDef, Setter)}
-     * @throws NullPointerException if {@code valueType} or {@code handlerClass} is {@code null}.
-     * @throws IllegalArgumentException if {@code handlerClass} is not a subtype of {@code OptionHandler}.
+     *                     This class must have the constructor that has the same
+     *                     signature as
+     *                     {@link OptionHandler#OptionHandler(CmdLineParser, OptionDef, Setter)}
+     * @throws NullPointerException     if {@code valueType} or {@code handlerClass}
+     *                                  is {@code null}.
+     * @throws IllegalArgumentException if {@code handlerClass} is not a subtype of
+     *                                  {@code OptionHandler}.
      */
-    public void registerHandler( Class valueType, Class<? extends OptionHandler> handlerClass ) {
+    public void registerHandler(Class valueType, Class<? extends OptionHandler> handlerClass) {
         checkNonNull(valueType, "valueType");
         checkNonNull(handlerClass, "handlerClass");
 
-        if(!OptionHandler.class.isAssignableFrom(handlerClass))
+        if (!OptionHandler.class.isAssignableFrom(handlerClass))
             throw new IllegalArgumentException(Messages.NO_OPTIONHANDLER.format());
 
         handlers.put(valueType, new DefaultConstructorHandlerFactory(handlerClass));
@@ -146,11 +159,13 @@ public class OptionHandlerRegistry {
      * their own {@link OptionHandler} implementation.
      *
      * @param valueType
-     *      The specified handler is used when the field/method annotated by {@link Option}
-     *      is of this type.
+     *                  The specified handler is used when the field/method
+     *                  annotated by {@link Option}
+     *                  is of this type.
      * @param factory
-     *      Factory to instantiate handler upon request.
-     * @throws NullPointerException if {@code valueType} or {@code factory} is {@code null}.
+     *                  Factory to instantiate handler upon request.
+     * @throws NullPointerException if {@code valueType} or {@code factory} is
+     *                              {@code null}.
      */
     public void registerHandler(Class valueType, OptionHandlerFactory factory) {
         checkNonNull(valueType, "valueType");
@@ -160,7 +175,8 @@ public class OptionHandlerRegistry {
     }
 
     /**
-     * Creates an {@link OptionHandler} that handles the given {@link Option} annotation
+     * Creates an {@link OptionHandler} that handles the given {@link Option}
+     * annotation
      * and the {@link Setter} instance.
      */
     @SuppressWarnings("unchecked")
@@ -170,16 +186,16 @@ public class OptionHandlerRegistry {
         checkNonNull(setter, "Setter");
 
         Class<? extends OptionHandler> h = o.handler();
-        if(h==OptionHandler.class) {
+        if (h == OptionHandler.class) {
             // infer the type
             Class<?> t = setter.getType();
 
             // enum is the special case
-            if(Enum.class.isAssignableFrom(t))
-                return new EnumOptionHandler(parser,o,setter,t);
+            if (Enum.class.isAssignableFrom(t))
+                return new EnumOptionHandler(parser, o, setter, t);
 
             OptionHandlerFactory factory = handlers.get(t);
-            if (factory==null)
+            if (factory == null)
                 throw new IllegalAnnotationError(Messages.UNKNOWN_HANDLER.format(t));
 
             return factory.getHandler(parser, o, setter);
@@ -192,10 +208,11 @@ public class OptionHandlerRegistry {
     /**
      * All {@link OptionHandler}s known to the {@link CmdLineParser}.
      *
-     * Constructors of {@link OptionHandler}-derived class keyed by their supported types.
+     * Constructors of {@link OptionHandler}-derived class keyed by their supported
+     * types.
      */
-    private final Map<Class, OptionHandlerFactory> handlers =
-            Collections.synchronizedMap(new HashMap<Class, OptionHandlerFactory>());
+    private final Map<Class, OptionHandlerFactory> handlers = Collections
+            .synchronizedMap(new HashMap<Class, OptionHandlerFactory>());
 
     /**
      * Provide custom logic for creating {@link OptionHandler} implementation.
