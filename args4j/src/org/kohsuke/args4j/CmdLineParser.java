@@ -422,8 +422,9 @@ public class CmdLineParser {
     }
 
     /**
-     * Essentially a pointer over a {@link String} array.
-     * Can move forward; can look ahead.
+     * Internal implementation of the Parameters interface.
+     * Refactored to return CliToken objects instead of raw Strings
+     * to eliminate Primitive Obsession.
      */
     private class CmdLineImpl implements Parameters {
         private final String[] args;
@@ -438,8 +439,13 @@ public class CmdLineParser {
             return pos < args.length;
         }
 
-        protected String getCurrentToken() {
-            return args[pos];
+        /**
+         * Returns the current argument token encapsulated as a CliToken.
+         * This allows the parser to query token properties (like isFlag())
+         * directly from the object rather than performing string checks.
+         */
+        protected CliToken getCurrentToken() {
+            return new CliToken(args[pos]);
         }
 
         private void proceed(int n) {
@@ -494,6 +500,11 @@ public class CmdLineParser {
      *                              not given.
      * @throws NullPointerException if {@code args} is {@code null}.
      */
+    /**
+     * Parses the command line arguments and set them to the option bean
+     * given in the constructor.
+     * * Refactored to use CliToken for encapsulated flag identification.
+     */
     public void parseArgument(final String... args) throws CmdLineException {
 
         checkNonNull(args, "args");
@@ -508,18 +519,20 @@ public class CmdLineParser {
         int argIndex = 0;
 
         while (cmdLine.hasMore()) {
-            String arg = cmdLine.getCurrentToken();
-            if (isOption(arg)) {
-                // '=' is for historical compatibility fallback
-                boolean isKeyValuePair = arg.contains(parserProperties.getOptionValueDelimiter())
-                        || arg.indexOf('=') != -1;
+            // REFACTORED: We use the CliToken object instead of raw String
+            CliToken token = cmdLine.getCurrentToken();
+            String rawValue = token.getValue();
+
+            // REFACTORED: Encapsulated logic 'token.isFlag()' replaces 'isOption(arg)'
+            if (token.isFlag()) {
+                boolean isKeyValuePair = rawValue.contains(parserProperties.getOptionValueDelimiter())
+                        || rawValue.indexOf('=') != -1;
 
                 // parse this as an option.
-                currentOptionHandler = isKeyValuePair ? findOptionHandler(arg) : findOptionByName(arg);
+                currentOptionHandler = isKeyValuePair ? findOptionHandler(rawValue) : findOptionByName(rawValue);
 
                 if (currentOptionHandler == null) {
-                    // TODO: insert dynamic handler processing
-                    throw new CmdLineException(this, Messages.UNDEFINED_OPTION, arg);
+                    throw new CmdLineException(this, Messages.UNDEFINED_OPTION, rawValue);
                 }
 
                 // known option; skip its name
@@ -529,14 +542,15 @@ public class CmdLineParser {
                     cmdLine.proceed(1);
                 }
             } else {
+                // Logic remains unchanged for positional arguments
                 if (argIndex >= arguments.size()) {
                     Messages msg = arguments.size() == 0 ? Messages.NO_ARGUMENT_ALLOWED : Messages.TOO_MANY_ARGUMENTS;
-                    throw new CmdLineException(this, msg, arg);
+                    throw new CmdLineException(this, msg, rawValue);
                 }
 
                 // known argument
                 currentOptionHandler = arguments.get(argIndex);
-                if (currentOptionHandler == null) // this is a programmer error. arg index should be continuous
+                if (currentOptionHandler == null)
                     throw new IllegalStateException("@Argument with index=" + argIndex + " is undefined");
 
                 if (!currentOptionHandler.option.isMultiValued())
@@ -547,7 +561,7 @@ public class CmdLineParser {
             present.add(currentOptionHandler);
         }
 
-        // check whether a help option is set
+        // Help option check logic
         boolean helpSet = false;
         for (OptionHandler handler : options) {
             if (handler.option.help() && present.contains(handler)) {
