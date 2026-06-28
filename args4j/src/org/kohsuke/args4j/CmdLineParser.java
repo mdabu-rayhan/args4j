@@ -679,23 +679,20 @@ public class CmdLineParser {
 
     /**
      * Finds a registered {@code OptionHandler} by its name or its alias.
+     * Refactored using Java Streams to reduce cyclomatic complexity.
+     * * @param name The name or alias to search for
      * 
-     * @param name name
-     * @return the {@code OptionHandler} or {@code null}
+     * @return the {@code OptionHandler} or {@code null} if not found
      */
     private OptionHandler findOptionByName(String name) {
-        for (OptionHandler h : options) {
-            NamedOptionDef option = (NamedOptionDef) h.option;
-            if (name.equals(option.name())) {
-                return h;
-            }
-            for (String alias : option.aliases()) {
-                if (name.equals(alias)) {
-                    return h;
-                }
-            }
-        }
-        return null;
+        return options.stream()
+                .filter(h -> {
+                    NamedOptionDef option = (NamedOptionDef) h.option;
+                    return name.equals(option.name()) ||
+                            Arrays.asList(option.aliases()).contains(name);
+                })
+                .findFirst()
+                .orElse(null);
     }
 
     /**
