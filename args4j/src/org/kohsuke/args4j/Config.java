@@ -12,24 +12,24 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-
 /**
  * Metadataconfiguration.
- * This class holds all metadata for a class, mainly a list of @Options and @Arguments.
+ * This class holds all metadata for a class, mainly a list of @Options
+ * and @Arguments.
  *
  * @author Jan Materne
  */
 public class Config {
 
 	/** All @Options. */
-	public List<ConfigElement> options = new ArrayList<ConfigElement>();;
+	public List<ConfigElement> options = new ArrayList<ConfigElement>();
 
 	/** All @Arguments. */
 	public List<ConfigElement> arguments = new ArrayList<ConfigElement>();
 
-
 	/**
 	 * SAX-Handler for reading the configuration file.
+	 * 
 	 * @author Jan Materne
 	 */
 	public class ConfigHandler extends DefaultHandler {
@@ -57,7 +57,7 @@ public class Config {
 				if (attributes.getValue("aliases") != null) {
 					currentCE.aliases = attributes.getValue("aliases").split(",");
 				} else {
-					currentCE.aliases = new String[]{};
+					currentCE.aliases = new String[] {};
 				}
 				(qName.equals("option") ? config.options : config.arguments).add(currentCE);
 			}
@@ -66,6 +66,7 @@ public class Config {
 
 	/**
 	 * Parses a XML file and returns a Config object holding the information.
+	 * 
 	 * @param xml source of the xml data
 	 * @return The parsed configuration.
 	 * @throws IOException

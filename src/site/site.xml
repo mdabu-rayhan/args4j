@@ -14,7 +14,6 @@
       <item name="Source code" href="https://github.com/kohsuke/args4j"/>
       <item name="Issues" href="http://java.net/jira/browse/ARGS4J"/>
     </menu>
-    ${reports}
   </body>
 </project>
 
