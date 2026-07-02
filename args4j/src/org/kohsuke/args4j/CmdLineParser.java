@@ -524,7 +524,7 @@ public class CmdLineParser {
             String rawValue = token.getValue();
 
             // REFACTORED: Encapsulated logic 'token.isFlag()' replaces 'isOption(arg)'
-            if (token.isFlag()) {
+            if (isOption(token)) {
                 boolean isKeyValuePair = rawValue.contains(parserProperties.getOptionValueDelimiter())
                         || rawValue.indexOf('=') != -1;
 
@@ -702,8 +702,9 @@ public class CmdLineParser {
         return options.stream()
                 .filter(h -> {
                     NamedOptionDef option = (NamedOptionDef) h.option;
+                    // Added a null check for option.aliases() to prevent test crashes
                     return name.equals(option.name()) ||
-                            Arrays.asList(option.aliases()).contains(name);
+                            (option.aliases() != null && Arrays.asList(option.aliases()).contains(name));
                 })
                 .findFirst()
                 .orElse(null);
@@ -712,13 +713,13 @@ public class CmdLineParser {
     /**
      * Returns {@code true} if the given token is an option
      * (as opposed to an argument).
-     * 
-     * @throws NullPointerException if {@code arg} is {@code null}.
+     * Refactored to process a domain object instead of a primitive String type.
+     * * @throws NullPointerException if {@code token} is {@code null}.
      */
-    protected boolean isOption(String arg) {
-        checkNonNull(arg, "arg");
-
-        return parsingOptions && arg.startsWith("-");
+    protected boolean isOption(CliToken token) {
+        checkNonNull(token, "token");
+        // This is the magic line that fixes the StopOptionTest!
+        return parsingOptions && token.isFlag();
     }
 
     /**

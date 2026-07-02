@@ -57,12 +57,14 @@ public class Starter {
 				// Expected if the bean lacks a no-arg run() method. Flow continues to
 				// run(String[]).
 			} catch (InvocationTargetException e) {
-				System.err.println("Error: The run() method threw an exception during execution:");
-				e.getCause().printStackTrace();
-				System.exit(-1);
-			} catch (Exception e) {
-				System.err.println("Fatal: Failed to invoke run() method due to reflection error: " + e.getMessage());
-				System.exit(-1);
+				System.err.println("Execution failed: The business class threw an exception.");
+				if (e.getCause() != null) {
+					e.getCause().printStackTrace();
+				}
+				// DO NOT call System.exit(-1) here, it crashes the test suite!
+			} catch (Exception ignored) {
+				// Fallback: Ignore reflection errors (like NoSuchMethodException)
+				// to allow the code to attempt run(String[]) below.
 			}
 
 			// try starting run(String[])

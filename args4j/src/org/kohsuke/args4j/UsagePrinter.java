@@ -16,8 +16,9 @@ class UsagePrinter {
 
         // 1. Calculate max length (Centralized Logic)
         int len = 0;
-        len = Math.max(len, getMaxPrefixLen(parser.getArguments(), rb));
-        len = Math.max(len, getMaxPrefixLen(parser.getOptions(), rb));
+        // FIX: Passing the parser object down to the helper method
+        len = Math.max(len, getMaxPrefixLen(parser, parser.getArguments(), rb));
+        len = Math.max(len, getMaxPrefixLen(parser, parser.getOptions(), rb));
 
         // 2. Print (Delegated Logic)
         for (OptionHandler h : parser.getArguments())
@@ -28,20 +29,21 @@ class UsagePrinter {
         w.flush();
     }
 
-    private static int getMaxPrefixLen(Iterable<OptionHandler> handlers, ResourceBundle rb) {
+    // FIX: Added CmdLineParser as a parameter so we can get its properties
+    private static int getMaxPrefixLen(CmdLineParser parser, Iterable<OptionHandler> handlers, ResourceBundle rb) {
         int max = 0;
         for (OptionHandler h : handlers) {
             if (h.option.usage().length() > 0) {
-                max = Math.max(max, h.getNameAndMeta(rb, null).length());
+                // FIX: Pass parser.getProperties() instead of null
+                max = Math.max(max, h.getNameAndMeta(rb, parser.getProperties()).length());
             }
         }
         return max;
     }
 
-    // This method now calls the parser's protected printOption method
+    // This delegates the printing back to the parser's protected method
     private static void printOption(PrintWriter w, CmdLineParser parser, OptionHandler h, int len, ResourceBundle rb,
             OptionHandlerFilter filter) {
-        // You would move the logic for printOption from CmdLineParser to here
-        // Or keep it protected in CmdLineParser and call it from here.
+        parser.printOption(w, h, len, rb, filter);
     }
 }
